@@ -1,4 +1,7 @@
 <resources>
-    <string name="app_name">Lab_3</string>
+    <string name="app_name">TimeTracking</string>
     <string name="action_settings">Settings</string>
+    <string name="records">Записи</string>
+    <string name="category">Категории</string>
+    <string name="statistics">Статистика</string>
 </resources>
