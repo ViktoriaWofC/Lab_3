@@ -4,4 +4,10 @@
     <string name="records">Записи</string>
     <string name="category">Категории</string>
     <string name="statistics">Статистика</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="add_category">Add category</string>
+    <string name="create">Create</string>
+    <string name="add_record">Add record</string>
 </resources>
