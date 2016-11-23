@@ -4,9 +4,115 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Tab3"/>
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <ScrollView
+            android:layout_marginTop="30dp"
+            android:layout_width="900dp"
+            android:layout_height="wrap_content">
+
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceLarge"
+                    android:text="@string/top_count"/>
+
+                <TextView
+                    android:id="@+id/text_top_count"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="20dp"
+                    android:textAppearance="?android:attr/textAppearanceLarge"/>
+
+
+
+            </LinearLayout>
+
+        </ScrollView>
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="@color/colorAccent"
+            android:layout_marginRight="10dp"/>
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent">
+
+            <RadioGroup
+                android:layout_marginTop="10dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+                <RadioButton
+                    android:id="@+id/radio_month"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/month"/>
+
+                <View
+                    android:layout_width="10dp"
+                    android:layout_height="30dp"/>
+
+                <RadioButton
+                    android:id="@+id/radio_var"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/var"/>
+
+            </RadioGroup>
+
+            <View
+                android:layout_width="10dp"
+                android:layout_height="1dp"/>
+
+            <DatePicker
+                android:id="@+id/date_start"
+                android:layout_width="wrap_content"
+                android:layout_height="150dp"
+                android:calendarViewShown="false"/>
+
+            <View
+                android:layout_width="10dp"
+                android:layout_height="10dp"/>
+
+            <DatePicker
+                android:id="@+id/date_end"
+                android:layout_width="wrap_content"
+                android:layout_height="150dp"
+                android:calendarViewShown="false"/>
+
+            <View
+                android:layout_width="10dp"
+                android:layout_height="1dp"/>
+
+            <Button
+                android:id="@+id/button_statistic"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:text="@string/rep"
+                android:textSize="20sp"
+                android:textColor="@android:color/white"
+                android:background="@color/colorAccent"
+                android:layout_marginTop="10dp"
+                android:padding="10dp"
+                android:onClick="onClickStatistic"/>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+
 
 </LinearLayout>

@@ -31,6 +31,7 @@ public class DbHelper extends SQLiteOpenHelper {
         sqLiteDatabase.execSQL("CREATE TABLE Record ("
                 +"_id INTEGER PRIMARY KEY AUTOINCREMENT,"
                 +" category_id INTEGER NOT NULL,"
+                +" date TEXT NOT NULL,"
                 +" description TEXT,"
                 +" time_start TEXT NOT NULL,"
                 +" time_end TEXT NOT NULL,"
@@ -57,16 +58,16 @@ public class DbHelper extends SQLiteOpenHelper {
 
     public void setTableRecors(SQLiteDatabase sqLiteDatabase) {
         String insertQuery = "INSERT INTO Record "
-                +"(category_id,description,time_start,time_end,time,photo)"
-                +" VALUES ('3','lalala','12:50','13:10','00:20',' ')";
+                +"(category_id,date,description,time_start,time_end,time,photo)"
+                +" VALUES ('3','23.11.2016','lalala','12:50','13:10','00:20',' ')";
         sqLiteDatabase.execSQL(insertQuery);
         insertQuery = "INSERT INTO Record "
-                +"(category_id,description,time_start,time_end,time,photo)"
-                +" VALUES ('3','ho ho','09:00','09:10','00:10',' ')";
+                +"(category_id,date,description,time_start,time_end,time,photo)"
+                +" VALUES ('3','24.11.2016','ho ho','09:00','09:10','00:10',' ')";
         sqLiteDatabase.execSQL(insertQuery);
         insertQuery = "INSERT INTO Record "
-                +"(category_id,description,time_start,time_end,time,photo)"
-                +" VALUES ('5','hrrrr','14:00','18:10','04:10',' ')";
+                +"(category_id,date,description,time_start,time_end,time,photo)"
+                +" VALUES ('5','23.11.2016','hrrrr','14:00','18:10','04:10',' ')";
         sqLiteDatabase.execSQL(insertQuery);
 
     }

@@ -14,23 +14,6 @@
     tools:context="com.example.user.lab_3.MainActivity"
     tools:showIn="@layout/activity_main">
 
-    <EditText
-        android:id="@+id/edit_test"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-
-    <Button
-        android:id="@+id/button_print_all"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="print all"/>
-
-    <Button
-        android:id="@+id/button_test"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="test"/>
-
     <TextView
         android:id="@+id/text_test"
         android:layout_width="wrap_content"
