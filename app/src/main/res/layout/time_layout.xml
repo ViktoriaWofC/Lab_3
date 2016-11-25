@@ -39,12 +39,15 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginLeft="30dp"
             android:text="@string/descr"/>
 
         <EditText
             android:id="@+id/edit_description"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginLeft="30dp"
+            android:layout_marginRight="30dp"
             android:textAppearance="?android:attr/textAppearanceLarge"
             android:hint="@string/des"/>
 
@@ -110,10 +113,6 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
 
-
-
-
-
         </LinearLayout>
 
         <LinearLayout
@@ -128,6 +127,8 @@
                 android:layout_height="wrap_content"
                 android:textColor="@android:color/white"
                 android:background="@color/colorAccent"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp"
                 android:text="@string/add_photo"
                 android:onClick="onClickAddPhoto"/>
 

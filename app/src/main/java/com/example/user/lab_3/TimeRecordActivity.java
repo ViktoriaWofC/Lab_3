@@ -53,7 +53,7 @@ public class TimeRecordActivity extends AppCompatActivity {
     NumberPicker startMinute;
     NumberPicker endHour;
     NumberPicker endMinute;
-    List<String> photo = new ArrayList<>();
+    List<Photo> photo = new ArrayList<>();
 
     AlertDialog al;
     AlertDialog.Builder ad;
@@ -139,14 +139,26 @@ public class TimeRecordActivity extends AppCompatActivity {
 
 
 
-            if(record.getPhotoIdList().length()>1) {
+            if(record.getPhotoIdList().length()>0) {
                 if(record.getPhotoIdList().contains(",")) {
                     String ph[] = record.getPhotoIdList().split(",");
-                    for (int i = 0; i < ph.length; i++)
-                        photo.add(ph[i]);
+
+                    query = "SELECT * FROM Photo";
+                    cursor = db.rawQuery(query, null);
+                    while (cursor.moveToNext()) {
+                        for (int i = 0; i < ph.length; i++)
+                            if(cursor.getInt(0)==Integer.valueOf(ph[i]))
+                                photo.add(new Photo(cursor.getInt(0),cursor.getString(1)));
+                    }
+                    cursor.close();
                 }
                 else {
-                    photo.add(record.getPhotoIdList());
+                    query = "SELECT * FROM Photo WHERE _id='"+record.getPhotoIdList()+"'";
+                    cursor = db.rawQuery(query, null);
+                    while (cursor.moveToNext()) {
+                        photo.add(new Photo(cursor.getInt(0),cursor.getString(1)));
+                    }
+                    cursor.close();
                 }
             }
         }
@@ -160,7 +172,12 @@ public class TimeRecordActivity extends AppCompatActivity {
 
         String f = intent.getStringExtra(PHOTO);
         if(f.length()>1){
-            photo.add(f);
+            query = "SELECT * FROM Photo WHERE name='"+f+"'";
+            cursor = db.rawQuery(query, null);
+            while (cursor.moveToNext()) {
+                photo.add(new Photo(cursor.getInt(0),cursor.getString(1)));
+            }
+            cursor.close();
         }
         linear = (LinearLayout)findViewById(R.id.linear_photo);
         addTextView();
@@ -170,11 +187,6 @@ public class TimeRecordActivity extends AppCompatActivity {
         textViews.clear();
         linear.removeAllViews();
 
-
-
-        ////if(record!=null)
-        //    editDescription.setText(record.getPhotoIdList());
-
         checkBox.clear();
         linear.removeAllViews();
         CheckBox cb;
@@ -182,7 +194,7 @@ public class TimeRecordActivity extends AppCompatActivity {
             cb = new CheckBox(context);
             cb.setId(i);
             cb.setOnClickListener(textClickListener);
-            cb.setText(photo.get(i).toString());
+            cb.setText(photo.get(i).getTitle());
             checkBox.add(cb);
         }
 
@@ -197,7 +209,8 @@ public class TimeRecordActivity extends AppCompatActivity {
         public void onClick(View v) {
             LayoutInflater li = LayoutInflater.from(context);
             layoutView = li.inflate(R.layout.photo_layout, null);
-            TextView tv;
+            CheckBox cb = (CheckBox)v;
+            cb.setChecked(false);
 
             ad = new AlertDialog.Builder(context);
             ad.setView(layoutView);
@@ -206,7 +219,7 @@ public class TimeRecordActivity extends AppCompatActivity {
 
             id = v.getId();
             ImageView im = (ImageView)layoutView.findViewById(R.id.image_view);
-            Uri uri = Uri.fromFile(new File(photo.get(v.getId())));
+            Uri uri = Uri.fromFile(new File(photo.get(v.getId()).getName()));
             im.setImageURI(uri);
 
             al = ad.create();
@@ -244,9 +257,9 @@ public class TimeRecordActivity extends AppCompatActivity {
         date = String.valueOf(day + "." + month + "." + year);
 
         if(photo.size()>0){
-            photoList = photo.get(0);
+            photoList = String.valueOf(photo.get(0).getId());
             for(int i = 1; i<photo.size();i++)
-                photoList +=","+photo.get(i);
+                photoList +=","+photo.get(i).getId();
         }
 
         Intent in = new Intent(TimeRecordActivity.this,CameraActivity.class);
@@ -293,9 +306,9 @@ public class TimeRecordActivity extends AppCompatActivity {
         date = String.valueOf(day + "." + month + "." + year);
 
         if(photo.size()>0){
-            photoList = photo.get(0);
+            photoList = String.valueOf(photo.get(0).getId());
             for(int i = 1; i<photo.size();i++)
-                photoList +=","+photo.get(i);
+                photoList +=","+photo.get(i).getId();
         }
 
         if(intent.getStringExtra(STATE).equals("open")){
@@ -356,6 +369,8 @@ public class TimeRecordActivity extends AppCompatActivity {
     }
 
     public void onClickDeleteImage(View view){
+        DbHelper.getInstance().getWritableDatabase()
+                .delete("Photo", "_id = ?", new String[]{String.valueOf(id)});
         photo.remove(id);
         al.cancel();
         addTextView();

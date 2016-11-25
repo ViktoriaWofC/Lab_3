@@ -203,7 +203,7 @@ public class MainActivity extends AppCompatActivity {
             NAME_LIST[i] = cat.get(i);
 
         for (int i = 0; i < VALUES.length; i++) {
-            mSeries.add(NAME_LIST[i] + " " + VALUES[i], VALUES[i]);
+            mSeries.add(NAME_LIST[i] + " " + String.format("%.2f",VALUES[i]), VALUES[i]);
             SimpleSeriesRenderer renderer = new SimpleSeriesRenderer();
             renderer.setColor(COLORS[(mSeries.getItemCount() - 1) % COLORS.length]);
             mRenderer.addSeriesRenderer(renderer);
@@ -500,8 +500,6 @@ public class MainActivity extends AppCompatActivity {
 
     public void onClickDeleteCategory(View view){
         //удаление значения
-
-
         add = new AlertDialog.Builder(context);
         add.setTitle("Удалить категорию");
         add.setMessage("Удалить категорию и все записи связанные с ней?");
@@ -516,8 +514,12 @@ public class MainActivity extends AppCompatActivity {
                 DbHelper.getInstance().getWritableDatabase()
                         .delete("Category","_id = ?", new String[]{String.valueOf(category.get(position).getId())});
                 updateCategory();
+                updateRecords();
                 addCheckBox();
                 printGraphic();
+
+                recyclerRecord.getAdapter().notifyDataSetChanged();
+                recyclerCategory.getAdapter().notifyDataSetChanged();
             }
         });
 
@@ -531,10 +533,8 @@ public class MainActivity extends AppCompatActivity {
         all = add.create();
         all.show();
 
-
-
-        recyclerCategory.getAdapter().notifyDataSetChanged();
         al.cancel();
+        recyclerCategory.getAdapter().notifyDataSetChanged();
     }
 
     public void onClickAddRecord(View view){

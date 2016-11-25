@@ -169,6 +169,9 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback, 
             os.write(paramArrayOfByte);
             os.close();
 
+            String query = "INSERT INTO Photo (name) VALUES ('"+path+"')";
+            DbHelper.getInstance().getWritableDatabase().execSQL(query);
+
             Intent in = new Intent(CameraActivity.this,TimeRecordActivity.class);
             String s = intent.getStringExtra(TimeRecordActivity.STATE);
             if(s.length()==3)
