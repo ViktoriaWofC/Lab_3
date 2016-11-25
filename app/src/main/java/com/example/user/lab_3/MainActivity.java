@@ -6,7 +6,10 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Camera;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AlertDialog;
@@ -16,18 +19,32 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.DatePicker;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.TabHost;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import org.achartengine.ChartFactory;
+import org.achartengine.GraphicalView;
+import org.achartengine.model.CategorySeries;
+import org.achartengine.model.SeriesSelection;
+import org.achartengine.renderer.DefaultRenderer;
+import org.achartengine.renderer.SimpleSeriesRenderer;
+
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
@@ -43,16 +60,32 @@ public class MainActivity extends AppCompatActivity {
     private RadioButton radioMonth;
     private RadioButton radioVar;
     private TextView topCount;
+    private TextView topTime;
+    private TextView topSum;
+    private LinearLayout linear;
+    private List<CheckBox> checkBox = new ArrayList<>();
 
     private ContentValues cv;
     List<Category> category = new ArrayList<>();
     List<TimeRecord> records = new ArrayList<>();
     Context context;
     int position;
+    String dateStart,dateEnd;
 
     AlertDialog al;
     AlertDialog.Builder ad;
     View layoutView;
+    AlertDialog all;
+    AlertDialog.Builder add;
+
+    ////////////////////////////////////////
+    private int[] COLORS = new int[] { Color.GREEN, Color.BLUE,Color.MAGENTA, Color.CYAN, Color.RED, Color.DKGRAY, Color.WHITE, Color.YELLOW, Color.LTGRAY };
+    private double[] VALUES;// = new double[] { 10, 11, 12, 13 };
+    private String[] NAME_LIST;// = new String[] { "A", "B", "C", "D" };
+    private CategorySeries mSeries = new CategorySeries("");
+    private DefaultRenderer mRenderer = new DefaultRenderer();
+    private GraphicalView mChartView;
+    /////////////////////////////////////////////////
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,15 +95,20 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         context = MainActivity.this;
 
-        //dbHelper = new DbHelper(MainActivity.this);
+        //////////////////////////////////////////
+
         cv = new ContentValues();
+
+        String today = getTodayDate();
+        int month = Integer.valueOf(today.substring(3, 5));
+        int day = Integer.valueOf(today.substring(0, 2));
+        int year = Integer.valueOf(today.substring(6));
+        dateStart = "01."+month+"."+year;
+        dateEnd = "31."+month+"."+year;
 
         updateCategory();
         updateRecords();
 
-
-
-        tv = (TextView)findViewById(R.id.text_test);
 
 
 
@@ -122,7 +160,99 @@ public class MainActivity extends AppCompatActivity {
 
         topCount = (TextView)findViewById(R.id.text_top_count);
         updateTopCount();
+        topTime = (TextView)findViewById(R.id.text_top_time);
+        updateTopTime();
+
+
+        linear = (LinearLayout)findViewById(R.id.linear_check);
+        topSum = (TextView)findViewById(R.id.text_top_sum);
+        addCheckBox();
+
+        printGraphic();
     }
+
+    ////////////////////////////////////////////////////////
+
+    public void printGraphic() {
+        mRenderer.setApplyBackgroundColor(true);
+        mRenderer.setBackgroundColor(Color.argb(100, 50, 50, 50));
+        mRenderer.setChartTitleTextSize(20);
+        mRenderer.setLabelsTextSize(15);
+        mRenderer.setLegendTextSize(15);
+        mRenderer.setMargins(new int[] { 20, 30, 15, 0 });
+        mRenderer.setZoomButtonsVisible(true);
+        mRenderer.setStartAngle(90);
+
+        List<String> cat = new ArrayList<>();
+
+        SQLiteDatabase db = DbHelper.getInstance().getReadableDatabase();
+        String query = "SELECT name FROM Category";
+        Cursor cursor = db.rawQuery(query, null);
+        while (cursor.moveToNext()) {
+            cat.add(cursor.getString(0));
+        }
+        cursor.close();
+
+        mSeries.clear();
+
+        //tv.setText(cat.size());
+
+        VALUES = Statistic.getTimeAllCatogory(dateStart,dateEnd);
+        NAME_LIST = new String[cat.size()];
+        for(int i = 0; i<cat.size();i++)
+            NAME_LIST[i] = cat.get(i);
+
+        for (int i = 0; i < VALUES.length; i++) {
+            mSeries.add(NAME_LIST[i] + " " + VALUES[i], VALUES[i]);
+            SimpleSeriesRenderer renderer = new SimpleSeriesRenderer();
+            renderer.setColor(COLORS[(mSeries.getItemCount() - 1) % COLORS.length]);
+            mRenderer.addSeriesRenderer(renderer);
+        }
+
+        if (mChartView == null) {
+            LinearLayout layout = (LinearLayout) findViewById(R.id.chart);
+            mChartView = ChartFactory.getPieChartView(context, mSeries, mRenderer);
+            mRenderer.setClickEnabled(true);
+            mRenderer.setSelectableBuffer(10);
+
+            mChartView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    SeriesSelection seriesSelection = mChartView.getCurrentSeriesAndPoint();
+
+                    if (seriesSelection == null) {
+                        //Toast.makeText(context,"No chart element was clicked",Toast.LENGTH_SHORT).show();
+                    }
+                    else {
+                        //Toast.makeText(context,"Chart element data point index "+ (seriesSelection.getPointIndex()+1) + " was clicked" + " point value="+ seriesSelection.getValue(), Toast.LENGTH_SHORT).show();
+                    }
+                }
+            });
+
+            mChartView.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    SeriesSelection seriesSelection = mChartView.getCurrentSeriesAndPoint();
+                    if (seriesSelection == null) {
+                        //Toast.makeText(context,"No chart element was long pressed", Toast.LENGTH_SHORT);
+                        return false;
+                    }
+                    else {
+                        //Toast.makeText(context,"Chart element data point index "+ seriesSelection.getPointIndex()+ " was long pressed",Toast.LENGTH_SHORT);
+                        return true;
+                    }
+                }
+            });
+            layout.addView(mChartView, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.FILL_PARENT, LinearLayout.LayoutParams.FILL_PARENT));
+        }
+        else
+        {
+            mChartView.repaint();
+        }
+
+    }
+
+    ////////////////////////////////////////////////////////
 
     public void updateCategory(){
         category.clear();
@@ -133,6 +263,13 @@ public class MainActivity extends AppCompatActivity {
             category.add(new Category(Integer.valueOf(cursor.getString(0)),cursor.getString(1)));
         }
         cursor.close();
+        if(radioMonth != null) {
+            radioMonth.setChecked(true);
+            radioVar.setChecked(false);
+            datePickerStart.setEnabled(false);
+            datePickerEnd.setEnabled(false);
+            buttonStatistic.setEnabled(false);
+        }
     }
 
     public void updateRecords(){
@@ -155,6 +292,31 @@ public class MainActivity extends AppCompatActivity {
 
         //tv.setText(records.size());
     }
+
+    public void addCheckBox(){
+        checkBox.clear();
+        linear.removeAllViews();
+        CheckBox cb;
+        for(int i = 0; i<category.size();i++){
+            cb = new CheckBox(context);
+            cb.setId(i);
+            cb.setOnClickListener(checkBoxClickListener);
+            cb.setText(category.get(i).getName());
+            checkBox.add(cb);
+        }
+
+        for(CheckBox c:checkBox)
+            linear.addView(c);
+
+        updateTopSum();
+    }
+
+    View.OnClickListener checkBoxClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            updateTopSum();
+        }
+    };
 
     /////////////////////////////////////////////////
     class CategoryViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
@@ -244,6 +406,7 @@ public class MainActivity extends AppCompatActivity {
             position = this.getLayoutPosition();
             Intent intent = new Intent(MainActivity.this,TimeRecordActivity.class);
             intent.putExtra(TimeRecordActivity.STATE,"open");
+            intent.putExtra(TimeRecordActivity.PHOTO,"");
             intent.putExtra(TimeRecordActivity.RECORD,records.get(position));
             startActivity(intent);
         }
@@ -314,6 +477,8 @@ public class MainActivity extends AppCompatActivity {
         DbHelper.getInstance().getWritableDatabase().execSQL(query);
         al.cancel();
         updateCategory();
+        addCheckBox();
+        printGraphic();
         recyclerCategory.getAdapter().notifyDataSetChanged();
     }
 
@@ -328,14 +493,46 @@ public class MainActivity extends AppCompatActivity {
                 .update("Category", cv, "_id = ?", new String[]{String.valueOf(category.get(position).getId())});
         al.cancel();
         updateCategory();
+        addCheckBox();
+        printGraphic();
         recyclerCategory.getAdapter().notifyDataSetChanged();
     }
 
     public void onClickDeleteCategory(View view){
         //удаление значения
-        DbHelper.getInstance().getWritableDatabase()
-                .delete("Category","_id = ?", new String[]{String.valueOf(category.get(position).getId())});
-        updateCategory();
+
+
+        add = new AlertDialog.Builder(context);
+        add.setTitle("Удалить категорию");
+        add.setMessage("Удалить категорию и все записи связанные с ней?");
+        add.setCancelable(false);
+
+        add.setPositiveButton("Да", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                String insertQuery = "DELETE FROM Record WHERE category_id='"+category.get(position).getId()+"'";
+                DbHelper.getInstance().getWritableDatabase().execSQL(insertQuery);
+
+                DbHelper.getInstance().getWritableDatabase()
+                        .delete("Category","_id = ?", new String[]{String.valueOf(category.get(position).getId())});
+                updateCategory();
+                addCheckBox();
+                printGraphic();
+            }
+        });
+
+        add.setNegativeButton("Нет", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                all.cancel();
+            }
+        });
+
+        all = add.create();
+        all.show();
+
+
+
         recyclerCategory.getAdapter().notifyDataSetChanged();
         al.cancel();
     }
@@ -343,6 +540,7 @@ public class MainActivity extends AppCompatActivity {
     public void onClickAddRecord(View view){
         Intent intent = new Intent(MainActivity.this,TimeRecordActivity.class);
         intent.putExtra(TimeRecordActivity.STATE,"new");
+        intent.putExtra(TimeRecordActivity.PHOTO,"f");
         startActivity(intent);
     }
     ///////////////////////////////////////////////////////////////
@@ -365,7 +563,7 @@ public class MainActivity extends AppCompatActivity {
     };
 
     public void updateTopCount(){
-        List<String> list = Statistic.getTopCount();
+        List<String> list = Statistic.getTopCount(dateStart,dateEnd);
         String s = "";
         for(String ss:list)
             s +=ss+"\n";
@@ -373,29 +571,95 @@ public class MainActivity extends AppCompatActivity {
         //tv.setText(String.valueOf(list.size()));
     }
 
+    public void updateTopTime(){
+        List<String> list = Statistic.getTopTime(dateStart,dateEnd);
+        String s = "";
+        for(String ss:list)
+            s +=ss+"\n";
+        topTime.setText(s);
+    }
 
+    public void updateTopSum(){
+        List<Integer> cat = new ArrayList<>();
+        String query;
+        Cursor cursor;
+        SQLiteDatabase db = DbHelper.getInstance().getReadableDatabase();
+
+        for(CheckBox check:checkBox){
+            if(check.isChecked()) {
+                query = "SELECT _id FROM Category where name='" + check.getText() + "'";
+                cursor = db.rawQuery(query, null);
+                while (cursor.moveToNext()) {
+                    cat.add(cursor.getInt(0));
+                }
+                cursor.close();
+            }
+        }
+
+        String sum = Statistic.getSumTime(cat,dateStart,dateEnd);
+        topSum.setText(sum);
+    }
 
     public void onClickRadioMonth(){
         datePickerStart.setEnabled(false);
         datePickerEnd.setEnabled(false);
         buttonStatistic.setEnabled(false);
 
-            //обновляем инфу
+        String today = getTodayDate();
+        int month = Integer.valueOf(today.substring(3, 5));
+        int day = Integer.valueOf(today.substring(0, 2));
+        int year = Integer.valueOf(today.substring(6));
+        dateStart = "01."+month+"."+year;
+        dateEnd = "31."+month+"."+year;
 
+        updateTopCount();
+        updateTopTime();
+        updateTopSum();
+        printGraphic();
     }
 
     public void onClickRadioVar(){
         datePickerStart.setEnabled(true);
         datePickerEnd.setEnabled(true);
         buttonStatistic.setEnabled(true);
+    }
 
-            //обновляем инфу
-
+    public static String getTodayDate(){
+        Date date = new Date();
+        SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy");
+        String dateString = sdf.format(date);
+        return dateString;
     }
 
     public void onClickStatistic(View view){
+        String month,day,year;
 
+        if (String.valueOf(datePickerStart.getMonth() + 1).length() == 1)
+            month = "0" + String.valueOf(datePickerStart.getMonth() + 1);
+        else month = String.valueOf(datePickerStart.getMonth() + 1);
+        if (String.valueOf(datePickerStart.getDayOfMonth()).length() == 1)
+            day = "0" + String.valueOf(datePickerStart.getDayOfMonth());
+        else day = String.valueOf(datePickerStart.getDayOfMonth());
+        year = String.valueOf(datePickerStart.getYear());
+        dateStart = String.valueOf(day + "." + month + "." + year);
 
+        if (String.valueOf(datePickerEnd.getMonth() + 1).length() == 1)
+            month = "0" + String.valueOf(datePickerEnd.getMonth() + 1);
+        else month = String.valueOf(datePickerEnd.getMonth() + 1);
+        if (String.valueOf(datePickerEnd.getDayOfMonth()).length() == 1)
+            day = "0" + String.valueOf(datePickerEnd.getDayOfMonth());
+        else day = String.valueOf(datePickerEnd.getDayOfMonth());
+        year = String.valueOf(datePickerEnd.getYear());
+        dateEnd = String.valueOf(day + "." + month + "." + year);
+
+        if(compareDate(dateStart,dateEnd)==1)
+            Toast.makeText(context, "Отрезок времени указан неверно!", Toast.LENGTH_LONG).show();
+        else{
+            updateTopCount();
+            updateTopTime();
+            updateTopSum();
+            printGraphic();
+        }
     }
 
     public int compareDate(String d1, String d2){

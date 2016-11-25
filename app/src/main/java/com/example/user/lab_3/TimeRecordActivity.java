@@ -5,20 +5,28 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.RequiresApi;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.DatePicker;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.NumberPicker;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.TimePicker;
+import android.widget.Toast;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -33,6 +41,7 @@ public class TimeRecordActivity extends AppCompatActivity {
 
     public static final String STATE = "STATE";
     public static final String RECORD = "RECORD";
+    public static final String PHOTO = "PHOTO";
 
     TimeRecord record;
     EditText editDescription;
@@ -44,6 +53,15 @@ public class TimeRecordActivity extends AppCompatActivity {
     NumberPicker startMinute;
     NumberPicker endHour;
     NumberPicker endMinute;
+    List<String> photo = new ArrayList<>();
+
+    AlertDialog al;
+    AlertDialog.Builder ad;
+    View layoutView;
+
+    private LinearLayout linear;
+    private List<TextView> textViews = new ArrayList<>();
+    private List<CheckBox> checkBox = new ArrayList<>();
 
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
@@ -53,6 +71,8 @@ public class TimeRecordActivity extends AppCompatActivity {
         context = TimeRecordActivity.this;
 
         intent = getIntent();
+        photo.clear();
+
         ///////////////////////////////////////////////////////////////////////////////////
         editDescription = (EditText)findViewById(R.id.edit_description);
 
@@ -115,8 +135,20 @@ public class TimeRecordActivity extends AppCompatActivity {
             String year = date.substring(6);
             datePicker.init(Integer.parseInt(year), Integer.parseInt(month)-1,Integer.parseInt(day), null);
 
-
             spinner.setSelection(category.indexOf(name));
+
+
+
+            if(record.getPhotoIdList().length()>1) {
+                if(record.getPhotoIdList().contains(",")) {
+                    String ph[] = record.getPhotoIdList().split(",");
+                    for (int i = 0; i < ph.length; i++)
+                        photo.add(ph[i]);
+                }
+                else {
+                    photo.add(record.getPhotoIdList());
+                }
+            }
         }
         else{
             startHour.setValue(0);
@@ -124,16 +156,66 @@ public class TimeRecordActivity extends AppCompatActivity {
             endHour.setValue(0);
             endMinute.setValue(0);
             spinner.setSelection(0);
-
-            //Date d = new Date();
-            //d.g
-            //SimpleDateFormat sd = new SimpleDateFormat();
-
         }
+
+        String f = intent.getStringExtra(PHOTO);
+        if(f.length()>1){
+            photo.add(f);
+        }
+        linear = (LinearLayout)findViewById(R.id.linear_photo);
+        addTextView();
     }
 
-    public void onClickSave(View view){
-        String category,time,start,end,descr,catId = "";
+    public void addTextView(){
+        textViews.clear();
+        linear.removeAllViews();
+
+
+
+        ////if(record!=null)
+        //    editDescription.setText(record.getPhotoIdList());
+
+        checkBox.clear();
+        linear.removeAllViews();
+        CheckBox cb;
+        for(int i = 0; i<photo.size();i++){
+            cb = new CheckBox(context);
+            cb.setId(i);
+            cb.setOnClickListener(textClickListener);
+            cb.setText(photo.get(i).toString());
+            checkBox.add(cb);
+        }
+
+        for(CheckBox c:checkBox)
+            linear.addView(c);
+    }
+
+    int id;
+
+    View.OnClickListener textClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            LayoutInflater li = LayoutInflater.from(context);
+            layoutView = li.inflate(R.layout.photo_layout, null);
+            TextView tv;
+
+            ad = new AlertDialog.Builder(context);
+            ad.setView(layoutView);
+            ad.setTitle("Edit category");
+            ad.setCancelable(false);
+
+            id = v.getId();
+            ImageView im = (ImageView)layoutView.findViewById(R.id.image_view);
+            Uri uri = Uri.fromFile(new File(photo.get(v.getId())));
+            im.setImageURI(uri);
+
+            al = ad.create();
+            al.show();
+        }
+    };
+
+    public void onClickAddPhoto(View view){
+        String category,time,start,end,descr,catId = "",photoList = " ";
 
         category = spinner.getSelectedItem().toString();
         SQLiteDatabase db = DbHelper.getInstance().getReadableDatabase();
@@ -161,6 +243,61 @@ public class TimeRecordActivity extends AppCompatActivity {
         year = String.valueOf(datePicker.getYear());
         date = String.valueOf(day + "." + month + "." + year);
 
+        if(photo.size()>0){
+            photoList = photo.get(0);
+            for(int i = 1; i<photo.size();i++)
+                photoList +=","+photo.get(i);
+        }
+
+        Intent in = new Intent(TimeRecordActivity.this,CameraActivity.class);
+
+        if(intent.getStringExtra(STATE).equals("open")){
+            TimeRecord rec = new TimeRecord(record.getId(),Integer.valueOf(catId),date,descr,start,end,time,photoList);
+            in.putExtra(TimeRecordActivity.STATE,"open");
+            in.putExtra(RECORD,rec);
+        }
+        else{
+            in.putExtra(TimeRecordActivity.STATE,"new");
+        }
+
+        startActivity(in);
+    }
+
+    public void onClickSave(View view){
+        String category,time,start,end,descr,catId = "",photoList = " ";
+
+        category = spinner.getSelectedItem().toString();
+        SQLiteDatabase db = DbHelper.getInstance().getReadableDatabase();
+        String query = "SELECT _id FROM Category where name='"+category+"'";
+        Cursor cursor = db.rawQuery(query, null);
+        while (cursor.moveToNext()) {
+            catId = cursor.getString(0);
+        }
+        cursor.close();
+        //////////////////////////////////
+        start = startHour.getValue()+":"+startMinute.getValue();
+        end = endHour.getValue()+":"+endMinute.getValue();
+        time = getTime(startHour.getValue(),startMinute.getValue(),endHour.getValue(),endMinute.getValue());
+        //////////////////////////////////////
+        descr = editDescription.getText().toString();
+
+        String month,day,year,date;
+
+        if (String.valueOf(datePicker.getMonth() + 1).length() == 1)
+            month = "0" + String.valueOf(datePicker.getMonth() + 1);
+        else month = String.valueOf(datePicker.getMonth() + 1);
+        if (String.valueOf(datePicker.getDayOfMonth()).length() == 1)
+            day = "0" + String.valueOf(datePicker.getDayOfMonth());
+        else day = String.valueOf(datePicker.getDayOfMonth());
+        year = String.valueOf(datePicker.getYear());
+        date = String.valueOf(day + "." + month + "." + year);
+
+        if(photo.size()>0){
+            photoList = photo.get(0);
+            for(int i = 1; i<photo.size();i++)
+                photoList +=","+photo.get(i);
+        }
+
         if(intent.getStringExtra(STATE).equals("open")){
             ContentValues cv = new ContentValues();
             cv.put("category_id", catId);
@@ -169,14 +306,14 @@ public class TimeRecordActivity extends AppCompatActivity {
             cv.put("time_start", start);
             cv.put("time_end", end);
             cv.put("time", time);
-            cv.put("photo", " ");
+            cv.put("photo", photoList);
             DbHelper.getInstance().getWritableDatabase()
                     .update("Record", cv, "_id = ?", new String[]{String.valueOf(record.getId())});
         }
         else{
             query = "INSERT INTO Record "
                     +"(category_id,date,description,time_start,time_end,time,photo)"
-                    +" VALUES ('"+catId+"','"+date+"','"+descr+"','"+start+"','"+end+"','"+time+"','"+" "+"')";
+                    +" VALUES ('"+catId+"','"+date+"','"+descr+"','"+start+"','"+end+"','"+time+"','"+photoList+"')";
             DbHelper.getInstance().getWritableDatabase().execSQL(query);
         }
 
@@ -216,5 +353,15 @@ public class TimeRecordActivity extends AppCompatActivity {
         }
         Intent intent = new Intent(TimeRecordActivity.this,MainActivity.class);
         startActivity(intent);
+    }
+
+    public void onClickDeleteImage(View view){
+        photo.remove(id);
+        al.cancel();
+        addTextView();
+    }
+
+    public void onClickCancelImage(View view){
+        al.cancel();
     }
 }

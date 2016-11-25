@@ -21,4 +21,8 @@
     <string name="rep">Пересчитать</string>
     <string name="des">Описание</string>
     <string name="top_count">Топ 3 самых частых занятий:</string>
+    <string name="top_time">Топ 3 занятий, занимающих больше всего времени:</string>
+    <string name="sum_time">Суммарное время:</string>
+    <string name="add_photo">Добавить фото</string>
+    <string name="photo">Фото:</string>
 </resources>
