@@ -1,5 +1,6 @@
 package com.example.user.lab_3;
 
+import android.app.FragmentManager;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -12,12 +13,15 @@ import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.FragmentTransaction;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -49,7 +53,7 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
-    private TextView tv;
+    //private TextView tv;
 
     private Button buttonStatistic;
     private DatePicker datePickerStart;
@@ -72,11 +76,15 @@ public class MainActivity extends AppCompatActivity {
     int position;
     String dateStart,dateEnd;
 
+    List<Integer> tabs = new ArrayList<>();
+
     AlertDialog al;
     AlertDialog.Builder ad;
     View layoutView;
     AlertDialog all;
     AlertDialog.Builder add;
+
+    TabHost tabHost;
 
     ////////////////////////////////////////
     private int[] COLORS = new int[] { Color.GREEN, Color.BLUE,Color.MAGENTA, Color.CYAN, Color.RED, Color.DKGRAY, Color.WHITE, Color.YELLOW, Color.LTGRAY };
@@ -108,11 +116,7 @@ public class MainActivity extends AppCompatActivity {
 
         updateCategory();
         updateRecords();
-
-
-
-
-        TabHost tabHost = (TabHost) findViewById(R.id.tabHost);
+        tabHost = (TabHost) findViewById(R.id.tabHost);
 
         tabHost.setup();
 
@@ -132,7 +136,19 @@ public class MainActivity extends AppCompatActivity {
         tabSpec.setIndicator(getString(R.string.statistics));
         tabHost.addTab(tabSpec);
 
+        tabHost.setOnTabChangedListener(new TabHost.OnTabChangeListener() {
+            @Override
+            public void onTabChanged(String s) {
+                Log.d("LOG_TAG", "!!!! ");
+                if(tabs.get(tabs.size()-1)!=tabHost.getCurrentTab())
+                    tabs.add(tabHost.getCurrentTab());
+            }
+        });
+
         tabHost.setCurrentTab(0);
+
+        tabs.add(0);
+        Log.d("LOG_TAG", "add tabs : " + 0);
 
         ///////////////////////////////////////////////
 
@@ -144,6 +160,7 @@ public class MainActivity extends AppCompatActivity {
         recyclerRecord.setLayoutManager(new LinearLayoutManager(this));
         recyclerRecord.setAdapter(new RecordAdaper());
 
+        recyclerRecord.getAdapter().notifyDataSetChanged();
         ////////////////////////////////////////////////////
         radioMonth = (RadioButton)findViewById(R.id.radio_month);
         radioMonth.setChecked(true);
@@ -318,6 +335,16 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    @Override
+    public void onBackPressed() {
+        if(tabs.size()>1){
+            tabs.remove(tabs.size()-1);
+            tabHost.setCurrentTab(tabs.get(tabs.size()-1));
+        }
+        else this.finish();
+
+    }
+
     /////////////////////////////////////////////////
     class CategoryViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
 
@@ -485,7 +512,7 @@ public class MainActivity extends AppCompatActivity {
     public void onClickSaveCategory(View view){
 
         editText = (EditText)layoutView.findViewById(R.id.edit_name_category);
-        tv.setText(editText.getText().toString());
+        //tv.setText(editText.getText().toString());
         //изменение значения
         cv.clear();
         cv.put("name", editText.getText().toString());
@@ -703,4 +730,6 @@ public class MainActivity extends AppCompatActivity {
 
         return super.onOptionsItemSelected(item);
     }
+
+
 }
